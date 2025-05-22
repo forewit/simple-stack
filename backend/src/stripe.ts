@@ -1,6 +1,6 @@
 import Stripe from 'stripe';
 import dotenv from 'dotenv';
-import { admin, firestore, updateUserRole } from './firebaseAdmin';
+import { admin, firestore, updateUserRole } from './firebaseAdmin.js';
 import { UserRole, type UserProfile } from 'shared'; // Uses 'shared' package
 
 dotenv.config();

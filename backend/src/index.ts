@@ -1,13 +1,13 @@
 import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
-import { cors } from 'hono/cors';
-import dotenv from 'dotenv';
+import { cors } from 'hono/cors'; 
+import dotenv from 'dotenv'; 
 
 // Import middleware and services
-import { authMiddleware, adminGuard } from './middleware';
-import { getOrCreateUserProfile, firestore, admin } from './firebaseAdmin'; // Ensure admin is exported and imported
-import { createCheckoutSession, handleStripeWebhook, getPremiumPriceId } from './stripe';
+import { authMiddleware, adminGuard } from './middleware.js';
+import { getOrCreateUserProfile, firestore, admin } from './firebaseAdmin.js'; // Ensure admin is exported and imported
+import { createCheckoutSession, handleStripeWebhook, getPremiumPriceId } from './stripe.js';
 import { type UserProfile } from 'shared';
 
 dotenv.config();

@@ -1,6 +1,6 @@
 import admin from 'firebase-admin';
-import { UserRole, type UserProfile } from 'shared'; // Uses 'shared' package
-import dotenv from 'dotenv';
+import { UserRole, type UserProfile } from 'shared';
+import dotenv from 'dotenv'; 
 
 
 dotenv.config();

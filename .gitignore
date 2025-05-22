@@ -50,6 +50,7 @@ frontend/coverage/ # Test coverage reports
 # Firebase
 # IMPORTANT: Ensure your service account key JSON file is listed here if it's within the project
 # e.g., backend/your-service-account-key.json
+backend/firebase-service-account-key.json
 # Or more generically if you put it in a specific folder:
 # backend/secrets/*.json
 .firebase/ # Firebase CLI local cache/state
@@ -74,3 +75,4 @@ junit.xml
 # Optional: If using other tools that generate local files
 # .eslintcache
 # .prettiercache
+

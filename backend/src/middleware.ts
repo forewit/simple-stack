@@ -1,7 +1,7 @@
 import { Context, Next } from 'hono';
-import { verifyFirebaseToken, getOrCreateUserProfile } from './firebaseAdmin';
+import { verifyFirebaseToken, getOrCreateUserProfile } from './firebaseAdmin.js';
 import type { DecodedIdToken } from 'firebase-admin/auth';
-import { UserRole, type UserProfile } from 'shared'; // Uses 'shared' package
+import { UserRole, type UserProfile } from 'shared'; 
 
 // Define a type for the context variable
 type AppContext = {
