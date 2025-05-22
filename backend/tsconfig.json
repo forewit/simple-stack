@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "moduleResolution": "node", // Or "bundler"
+    "resolveJsonModule": true,
+    "baseUrl": ".", // Important for path aliases
+    "paths": {
+      "shared": ["../shared/src"] // For editor intellisense to src
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
