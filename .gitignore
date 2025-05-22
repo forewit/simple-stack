@@ -1,0 +1,76 @@
+# Node & Package Manager
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json # If you prefer to only commit package.json and let CI generate lockfile
+
+
+# IDE / Editor specific
+.vscode/
+.idea/
+*.iml
+*.project
+*.classpath
+*.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Build Output
+# Root dist directory for the Svelte frontend build
+/dist/
+
+# Workspace-specific build outputs
+frontend/dist/ # In case Vite ever outputs here locally before moving to root /dist
+backend/dist/
+shared/dist/
+
+# Environment Variables - IMPORTANT: NEVER COMMIT THESE
+.env
+.env.*
+!.env.example # It's good practice to commit an example env file
+
+# Log files
+*.log
+logs
+*.log.*
+
+# Frontend (Svelte/Vite) specific
+frontend/.vite/ # Vite cache directory
+frontend/coverage/ # Test coverage reports
+
+# Backend (Node/TypeScript) specific
+# backend/dist/ # Already covered by workspace-specific
+
+# Shared (TypeScript) specific
+# shared/dist/ # Already covered by workspace-specific
+
+# Firebase
+# IMPORTANT: Ensure your service account key JSON file is listed here if it's within the project
+# e.g., backend/your-service-account-key.json
+# Or more generically if you put it in a specific folder:
+# backend/secrets/*.json
+.firebase/ # Firebase CLI local cache/state
+firebase-debug.log
+# firebase-export-* # For emulator data exports if you use them
+
+# Stripe
+# .stripe/ # If using Stripe CLI and it creates local config/state
+
+# OS generated files
+.DS_Store
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Test outputs
+coverage/
+junit.xml
+.nyc_output/
+
+# Optional: If using other tools that generate local files
+# .eslintcache
+# .prettiercache

@@ -1,0 +1,21 @@
+{
+  "name": "simple-stack",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend",
+    "shared"
+  ],
+  "scripts": {
+    "dev:frontend": "npm run dev -w frontend",
+    "dev:backend": "npm run dev -w backend",
+    "dev:shared": "npm run dev -w shared",
+    "build:frontend": "npm run build -w frontend",
+    "build:backend": "npm run build -w backend",
+    "build:shared": "npm run build -w shared",
+    "start:backend": "npm run start -w backend"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}
