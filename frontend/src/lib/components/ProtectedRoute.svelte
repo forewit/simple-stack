@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Route, navigate } from 'svelte-routing';
-  import { authStore } from '../lib/firebase';
+  import { authStore } from '../firebase';
   import { UserRole } from 'shared'; // Uses 'shared' package
   import { tick } from 'svelte';
 

@@ -6,7 +6,7 @@
   import AppView from './routes/AppView.svelte';
   import AdminView from './routes/AdminView.svelte';
   import SignIn from './routes/SignIn.svelte';
-  import ProtectedRoute from './components/ProtectedRoute.svelte';
+  import ProtectedRoute from './lib/components/ProtectedRoute.svelte';
   import { UserRole } from 'shared'; // Uses 'shared' package
 
   const handleSignOut = async () => {
@@ -19,16 +19,16 @@
 </script>
 
 <Router>
-  <nav>
-    <a href="/" use:link>Home</a>
+  <nav class="bg-gray-800 text-white p-4 flex items-center justify-between">
+    <a href="/" use:link class="mr-4 hover:text-gray-300">Home</a>
     {#if $authStore.firebaseUser}
-      <a href="/app" use:link>App</a>
+      <a href="/app" use:link class="mr-4 hover:text-gray-300">App</a>
       {#if $authStore.userProfile?.role === UserRole.ADMIN}
-        <a href="/admin" use:link>Admin</a>
+        <a href="/admin" use:link class="mr-4 hover:text-gray-300">Admin</a>
       {/if}
-      <button on:click={handleSignOut}>Sign Out ({$authStore.userProfile?.email || 'User'})</button>
+      <button on:click={handleSignOut} class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Sign Out ({$authStore.userProfile?.email || 'User'})</button>
     {:else}
-      <a href="/signin" use:link>Sign In</a>
+      <a href="/signin" use:link class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Sign In</a>
     {/if}
   </nav>
 
