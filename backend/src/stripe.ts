@@ -4,62 +4,47 @@ import { admin, firestore, updateUserRole } from './firebaseAdmin';
 import { UserRole, type UserProfile } from 'shared'; // Uses 'shared' package
 
 dotenv.config();
-// ... (rest of the Stripe logic, same as pnpm version, ensure UserRole/UserProfile from 'shared')
-// Ensure STRIPE_SECRET_KEY check and Stripe instance initialization are correct.
-// Ensure getPremiumPriceId, createCheckoutSession, handleStripeWebhook are correct.
 
-// --- Implementation (copy from pnpm version, ensure types from 'shared') ---
-if (!process.env.STRIPE_SECRET_KEY) {
-    console.error("STRIPE_SECRET_KEY is not defined in .env file.");
-}
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2023-10-16',
+  apiVersion: '2025-04-30.basil',
   typescript: true,
 });
 
-export let getPremiumPriceId = (): string => { /* ... */ };
-export let createCheckoutSession = async (uid: string, userEmail?: string) => { /* ... */ };
-export let handleStripeWebhook = async (rawBody: Buffer | string, signature: string) => { /* ... */ };
+export const createCheckoutSession = async (uid: string, priceId: string, userEmail?: string) => {
+  // Optionally, find or create a Stripe customer
+  let customerId = (await admin.firestore().collection('users').doc(uid).get()).data()?.stripeCustomerId;
 
-export const getPremiumPriceId_impl = (): string => {
-    const priceId = process.env.STRIPE_PREMIUM_PRICE_ID;
-    if (!priceId) {
-        console.error("STRIPE_PREMIUM_PRICE_ID is not set in environment variables.");
-        throw new Error("Stripe premium price ID not configured.");
-    }
-    return priceId;
-};
-getPremiumPriceId = getPremiumPriceId_impl;
-
-export const createCheckoutSession_impl = async (uid: string, userEmail?: string) => {
-  const priceId = getPremiumPriceId();
-  const userDocRef = firestore.collection('users').doc(uid);
-  const userDoc = await userDocRef.get();
-  let stripeCustomerId = userDoc.data()?.stripeCustomerId;
-
-  if (!stripeCustomerId) {
+  if (!customerId) {
     const customer = await stripe.customers.create({
-        email: userEmail,
+        email: userEmail, // Pass user's email
         metadata: { firebaseUID: uid }
     });
-    stripeCustomerId = customer.id;
-    await userDocRef.set({ stripeCustomerId }, { merge: true });
+    customerId = customer.id;
+    await admin.firestore().collection('users').doc(uid).update({ stripeCustomerId: customerId });
   }
+
 
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
     mode: 'subscription',
-    customer: stripeCustomerId,
-    line_items: [ { price: priceId, quantity: 1 } ],
-    metadata: { firebaseUID: uid },
-    success_url: `${process.env.APP_URL}/app?payment_success=true`,
+    customer: customerId, // Use existing or newly created customer
+    line_items: [
+      {
+        price: priceId,
+        quantity: 1,
+      },
+    ],
+    // Important: metadata to link session to Firebase user
+    metadata: {
+      firebaseUID: uid,
+    },
+    success_url: `${process.env.APP_URL}/app?payment_success=true`, // Or a dedicated success page
     cancel_url: `${process.env.APP_URL}/app?payment_canceled=true`,
   });
   return session;
 };
-createCheckoutSession = createCheckoutSession_impl;
 
-export const handleStripeWebhook_impl = async (rawBody: Buffer | string, signature: string) => {
+export const handleStripeWebhook = async (rawBody: any, signature: string) => {
   const secret = process.env.STRIPE_WEBHOOK_SECRET!;
   let event: Stripe.Event;
 
@@ -70,41 +55,73 @@ export const handleStripeWebhook_impl = async (rawBody: Buffer | string, signatu
     throw new Error('Webhook signature verification failed');
   }
 
-  const dataObject = event.data.object as any;
-  let firebaseUID = dataObject.metadata?.firebaseUID;
-
-  if (!firebaseUID && dataObject.customer) {
-    // Attempt to find Firebase UID from Stripe Customer ID if metadata is missing
-    const usersSnap = await firestore.collection('users').where('stripeCustomerId', '==', dataObject.customer).limit(1).get();
-    if (!usersSnap.empty) {
-        firebaseUID = usersSnap.docs[0].id;
-    }
-  }
+  const session = event.data.object as Stripe.Checkout.Session;
+  const firebaseUID = session.metadata?.firebaseUID;
 
   if (!firebaseUID) {
-    console.error('Webhook Error: No firebaseUID found for event.', event.type, dataObject.id);
-    if (event.type.startsWith('customer.subscription.')) {
-         return { received: true, error: 'Missing firebaseUID for critical subscription event' };
-    }
-    return { received: true, message: 'No Firebase UID, event not processed for user update.' };
+    console.error('Webhook Error: No firebaseUID in session metadata');
+    return { received: true, error: 'Missing firebaseUID' };
   }
-
-  const userDocRef = firestore.collection('users').doc(firebaseUID);
 
   switch (event.type) {
     case 'checkout.session.completed':
-      // ... (same logic as pnpm version)
+      console.log(`Checkout session completed for user ${firebaseUID}`);
+      // User successfully subscribed.
+      // The subscription object is not directly in checkout.session.completed
+      // We need to retrieve the subscription if we need its ID immediately.
+      // Usually, customer.subscription.created/updated is more reliable for role changes.
+      if (session.payment_status === 'paid') {
+         // Optionally ensure customer ID is stored
+        if (session.customer && typeof session.customer === 'string') {
+            await admin.firestore().collection('users').doc(firebaseUID).set({
+                stripeCustomerId: session.customer,
+                subscriptionStatus: 'active' // Tentative, confirm with subscription event
+            }, { merge: true });
+        }
+        // We could optimistically update role here, but better to wait for subscription event
+        // await updateUserRole(firebaseUID, UserRole.PREMIUM);
+      }
       break;
+
     case 'customer.subscription.created':
     case 'customer.subscription.updated':
-      // ... (same logic as pnpm version, ensure UserRole comes from 'shared')
+      const subscription = event.data.object as Stripe.Subscription;
+      console.log(`Subscription ${event.type} for user ${firebaseUID}, status: ${subscription.status}`);
+      if (subscription.status === 'active' || subscription.status === 'trialing') {
+        await updateUserRole(firebaseUID, UserRole.PREMIUM);
+        await admin.firestore().collection('users').doc(firebaseUID).update({
+          subscriptionStatus: subscription.status,
+          stripeSubscriptionId: subscription.id,
+        });
+      } else {
+        // e.g., 'canceled', 'past_due', 'unpaid'
+        await updateUserRole(firebaseUID, UserRole.FREE);
+        await admin.firestore().collection('users').doc(firebaseUID).update({
+          subscriptionStatus: subscription.status,
+        });
+      }
       break;
-    case 'customer.subscription.deleted':
-      // ... (same logic as pnpm version, ensure UserRole comes from 'shared')
+
+    case 'customer.subscription.deleted': // Subscription ended
+      const deletedSubscription = event.data.object as Stripe.Subscription;
+      console.log(`Subscription deleted for user ${firebaseUID}`);
+      await updateUserRole(firebaseUID, UserRole.FREE);
+      await admin.firestore().collection('users').doc(firebaseUID).update({
+        subscriptionStatus: deletedSubscription.status, // should be 'canceled'
+      });
       break;
+
     default:
-      console.log(`Unhandled Stripe webhook event type: ${event.type}`);
+      console.log(`Unhandled Stripe event type: ${event.type}`);
   }
   return { received: true };
 };
-handleStripeWebhook = handleStripeWebhook_impl;
+
+// Helper to get Stripe price ID from env
+export const getPremiumPriceId = () => {
+    const priceId = process.env.STRIPE_PREMIUM_PRICE_ID;
+    if (!priceId) {
+        throw new Error("STRIPE_PREMIUM_PRICE_ID is not set in environment variables.");
+    }
+    return priceId;
+}
